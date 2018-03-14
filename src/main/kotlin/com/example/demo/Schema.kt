@@ -1,6 +1,7 @@
 package com.example.demo
 
-import graphql.Scalars.*
+import graphql.Scalars.GraphQLInt
+import graphql.Scalars.GraphQLString
 import graphql.schema.GraphQLFieldDefinition
 import graphql.schema.GraphQLList
 import graphql.schema.GraphQLObjectType
@@ -27,7 +28,15 @@ fun buildSchema(): GraphQLSchema {
   val personsQuery = GraphQLFieldDefinition.newFieldDefinition()
     .name("persons")
     .type(GraphQLList.list(person))
-    .dataFetcher { _ -> persons }
+    .argument { a -> a.type(GraphQLString).name("nameLike") }
+    .dataFetcher { e ->
+      val nameArgument = e.getArgument<String?>("nameLike")
+      if (nameArgument != null) {
+        persons.filter { it.name.toLowerCase().contains(nameArgument.toLowerCase()) }
+      } else {
+        persons
+      }
+    }
 
   return GraphQLSchema.newSchema()
     .query(
