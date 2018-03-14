@@ -17,11 +17,21 @@ class DemoApplicationTests(@LocalServerPort port: Int) {
   private val client = WebClient.create("http://localhost:$port")
 
   @Test
-  fun contextLoads() {
+  fun `should handle post`() {
     client.post().uri("/graphql")
       .syncBody(QueryParameters(
         query = "{test}"
       ))
+      .retrieve().bodyToMono<GraphqlResponse>()
+      .test().consumeNextWith {
+        assertThat(it.data).isEqualTo(mapOf("test" to "response"))
+      }
+      .verifyComplete()
+  }
+
+  @Test
+  fun `should handle get`() {
+    client.get().uri("/graphql?query={query}", "{test}")
       .retrieve().bodyToMono<GraphqlResponse>()
       .test().consumeNextWith {
         assertThat(it.data).isEqualTo(mapOf("test" to "response"))

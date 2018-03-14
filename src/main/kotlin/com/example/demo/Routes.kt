@@ -67,7 +67,11 @@ data class QueryParameters(
   val variables: Map<String, Any>? = null
 )
 
-fun getJsonAsMap(variables: String): Map<String, Any> {
+fun getJsonAsMap(variables: String?): Map<String, Any>? {
+  if (variables == null) {
+    return null
+  }
+
   val typeRef =
     TypeFactory.defaultInstance().constructMapType(HashMap::class.java, String::class.java, Any::class.java)
   return ObjectMapper().readValue(variables, typeRef)
