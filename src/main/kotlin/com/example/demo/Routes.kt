@@ -9,6 +9,7 @@ import org.springframework.context.annotation.Configuration
 import org.springframework.core.io.ClassPathResource
 import org.springframework.http.MediaType.APPLICATION_JSON
 import org.springframework.web.reactive.function.BodyInserters.fromResource
+import org.springframework.web.reactive.function.server.ServerRequest
 import org.springframework.web.reactive.function.server.ServerResponse
 import org.springframework.web.reactive.function.server.ServerResponse.ok
 import org.springframework.web.reactive.function.server.body
@@ -21,36 +22,33 @@ import java.util.*
 class Routes {
 
   @Bean
-  fun routesFun() = router {
+  fun routesFun(objectMapper: ObjectMapper) = router {
     (accept(APPLICATION_JSON)).nest {
       GET("/graphql", { req ->
-
-        val queryParameters = QueryParameters(
-          query = req.queryParam("query").get(),
-          operationName = req.queryParam("operationName").get(),
-          variables = getJsonAsMap(req.queryParam("variables").get())
-        )
+        val queryParameters = queryParametersFromRequest(req)
         serveGraphql(queryParameters)
       })
       POST("/graphql", { req ->
-
         req.bodyToMono(String::class.java)
           .flatMap { body ->
-            val bodyMap = getJsonAsMap(body)
-            val queryParameters = QueryParameters(
-              query = bodyMap.getValue("query") as String,
-              operationName = bodyMap["operationName"] as String?,
-              variables = bodyMap["variables"] as Map<String, Any>?
-            )
+            val queryParameters = objectMapper.readValue(body, QueryParameters::class.java)
             serveGraphql(queryParameters)
           }
-
       })
       GET("/", { ok().body(fromResource(ClassPathResource("/graphiql.html"))) })
     }
   }
 }
 
+fun queryParametersFromRequest(req: ServerRequest): QueryParameters {
+  return QueryParameters(
+    query = req.queryParam("query").get(),
+    operationName = req.queryParam("operationName").orElseGet { null },
+    variables = getJsonAsMap(req.queryParam("variables").orElseGet { null })
+  )
+}
+
+val schema = buildSchema()
 
 fun serveGraphql(queryParameters: QueryParameters): Mono<ServerResponse> {
   val executionInput = newExecutionInput()
@@ -58,13 +56,11 @@ fun serveGraphql(queryParameters: QueryParameters): Mono<ServerResponse> {
     .operationName(queryParameters.operationName)
     .variables(queryParameters.variables)
 
-  val schema = buildSchema()
-
   val graphQL = GraphQL
     .newGraphQL(schema)
     .build()
-  val executionResult = graphQL.executeAsync(executionInput.build())
 
+  val executionResult = graphQL.executeAsync(executionInput)
   return ok().body(Mono.fromFuture(executionResult))
 }
 
