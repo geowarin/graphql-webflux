@@ -11,6 +11,9 @@ import org.springframework.web.reactive.function.client.bodyToMono
 import reactor.test.test
 import org.assertj.core.api.Assertions.*
 
+/**
+ * @see http://graphql.org/learn/serving-over-http/
+ */
 @ExtendWith(SpringExtension::class)
 @SpringBootTest(webEnvironment = RANDOM_PORT)
 class DemoApplicationTests(@LocalServerPort port: Int) {
@@ -20,29 +23,32 @@ class DemoApplicationTests(@LocalServerPort port: Int) {
   fun `should handle post`() {
     client.post().uri("/graphql")
       .syncBody(QueryParameters(
-        query = "{test}"
+        query = "{persons{name}}"
       ))
-      .retrieve().bodyToMono<GraphqlResponse>()
+      .retrieve().bodyToMono<GraphqlResponse<Persons>>()
       .test().consumeNextWith {
-        assertThat(it.data).isEqualTo(mapOf("test" to "response"))
+        assertThat(it.data.persons.map { it.name }).containsExactly("Ada", "Haskell")
       }
       .verifyComplete()
   }
 
   @Test
   fun `should handle get`() {
-    client.get().uri("/graphql?query={query}", "{test}")
-      .retrieve().bodyToMono<GraphqlResponse>()
+    client.get().uri("/graphql?query={query}", "{persons{name}}")
+      .retrieve().bodyToMono<GraphqlResponse<Persons>>()
       .test().consumeNextWith {
-        assertThat(it.data).isEqualTo(mapOf("test" to "response"))
+        assertThat(it.data.persons.map { it.name }).containsExactly("Ada", "Haskell")
       }
       .verifyComplete()
   }
-
 }
 
-data class GraphqlResponse(
-  val data: Any,
+data class Persons(
+  val persons: List<Person>
+)
+
+data class GraphqlResponse<T>(
+  val data: T,
   val errors: List<Any>,
   val extensions: Any?
 )
