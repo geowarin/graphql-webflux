@@ -22,9 +22,9 @@ class DemoApplicationTests(@LocalServerPort port: Int) {
       .syncBody(QueryParameters(
         query = "{test}"
       ))
-      .retrieve().bodyToMono<String>()
+      .retrieve().bodyToMono<GraphqlResponse>()
       .test().consumeNextWith {
-        assertThat(it).isEqualTo("""{"data":{"test":"response"},"errors":[],"extensions":null}""")
+        assertThat(it.data).isEqualTo(mapOf("test" to "response"))
       }
       .verifyComplete()
   }
@@ -32,7 +32,7 @@ class DemoApplicationTests(@LocalServerPort port: Int) {
 }
 
 data class GraphqlResponse(
-  val data: String,
-  val errors: String,
-  val extensions: String?
+  val data: Any,
+  val errors: List<Any>,
+  val extensions: Any?
 )
