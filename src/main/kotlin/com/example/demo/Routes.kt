@@ -4,11 +4,6 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.type.TypeFactory
 import graphql.ExecutionInput.newExecutionInput
 import graphql.GraphQL
-import graphql.execution.instrumentation.ChainedInstrumentation
-import graphql.execution.instrumentation.dataloader.DataLoaderDispatcherInstrumentation
-import graphql.execution.instrumentation.dataloader.DataLoaderDispatcherInstrumentationOptions.newOptions
-import graphql.execution.instrumentation.tracing.TracingInstrumentation
-import org.dataloader.DataLoaderRegistry
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.core.io.ClassPathResource
@@ -19,7 +14,6 @@ import org.springframework.web.reactive.function.server.ServerResponse.ok
 import org.springframework.web.reactive.function.server.body
 import org.springframework.web.reactive.function.server.router
 import reactor.core.publisher.Mono
-import reactor.core.publisher.toMono
 import java.util.*
 
 
@@ -65,25 +59,13 @@ fun serveGraphql(queryParameters: QueryParameters): Mono<ServerResponse> {
     .variables(queryParameters.variables)
 
   val schema = buildSchema()
-  val dataLoaderRegistry = DataLoaderRegistry()
-
-  val dlInstrumentation =
-    DataLoaderDispatcherInstrumentation(dataLoaderRegistry, newOptions().includeStatistics(true))
-
-  val instrumentation = ChainedInstrumentation(listOf(TracingInstrumentation(), dlInstrumentation))
 
   val graphQL = GraphQL
     .newGraphQL(schema)
-    .instrumentation(instrumentation)
     .build()
-  val executionResult = graphQL.execute(executionInput.build())
+  val executionResult = graphQL.executeAsync(executionInput.build())
 
-  val data = executionResult.toSpecification()
-  return if (data == null) {
-    Mono.empty()
-  } else {
-    ok().body(data.toMono())
-  }
+  return ok().body(Mono.fromFuture(executionResult))
 }
 
 data class QueryParameters(
