@@ -1,5 +1,6 @@
 package com.example.demo
 
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.springframework.boot.test.context.SpringBootTest
@@ -9,7 +10,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension
 import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.bodyToMono
 import reactor.test.test
-import org.assertj.core.api.Assertions.*
+import java.net.URLEncoder
 
 /**
  * @see http://graphql.org/learn/serving-over-http/
@@ -22,9 +23,11 @@ class DemoApplicationTests(@LocalServerPort port: Int) {
   @Test
   fun `should handle post`() {
     client.post().uri("/graphql")
-      .syncBody(QueryParameters(
-        query = "{persons{name}}"
-      ))
+      .syncBody(
+        QueryParameters(
+          query = "{persons{name}}"
+        )
+      )
       .retrieve().bodyToMono<GraphqlResponse<Persons>>()
       .test().consumeNextWith {
         assertThat(it.data.persons.map { it.name }).containsExactly("Ada", "Haskell")
@@ -38,6 +41,51 @@ class DemoApplicationTests(@LocalServerPort port: Int) {
       .retrieve().bodyToMono<GraphqlResponse<Persons>>()
       .test().consumeNextWith {
         assertThat(it.data.persons.map { it.name }).containsExactly("Ada", "Haskell")
+      }
+      .verifyComplete()
+  }
+
+  @Test
+  fun `POST should handle variables`() {
+    val query = """
+      query (${'$'}name: String) {
+        persons(nameLike: ${'$'}name) {
+          name
+        }
+      }
+    """
+
+    client.post().uri("/graphql")
+      .syncBody(QueryParameters(query = query, variables = mapOf("name" to "ada")))
+      .retrieve().bodyToMono<GraphqlResponse<Persons>>()
+      .test().consumeNextWith {
+        assertThat(it.data.persons.map { it.name }).containsExactly("Ada")
+      }
+      .verifyComplete()
+  }
+
+  @Test
+  fun `GET should handle variables`() {
+    val query = """query (${'$'}name: String) { persons(nameLike: ${'$'}name) { name } }"""
+    val variables = """{"name": "ada"}"""
+
+    client.get().uri("/graphql?query={query}&variables={variables}", query, variables)
+      .retrieve().bodyToMono<GraphqlResponse<Persons>>()
+      .test().consumeNextWith {
+        assertThat(it.data.persons.map { it.name }).containsExactly("Ada")
+      }
+      .verifyComplete()
+  }
+
+  @Test
+  fun `GET should handle variables (URL encoded)`() {
+    val query = """query (${'$'}name: String) { persons(nameLike: ${'$'}name) { name } }"""
+    val variables = URLEncoder.encode("""{"name": "ada"}""", "UTF-8")
+
+    client.get().uri("/graphql?query={query}&variables={variables}", query, variables)
+      .retrieve().bodyToMono<GraphqlResponse<Persons>>()
+      .test().consumeNextWith {
+        assertThat(it.data.persons.map { it.name }).containsExactly("Ada")
       }
       .verifyComplete()
   }

@@ -14,6 +14,7 @@ import org.springframework.web.reactive.function.server.ServerResponse.ok
 import org.springframework.web.reactive.function.server.body
 import org.springframework.web.reactive.function.server.router
 import reactor.core.publisher.Mono
+import java.net.URLDecoder
 import java.util.*
 
 
@@ -41,8 +42,15 @@ fun queryParametersFromRequest(req: ServerRequest): QueryParameters {
   return QueryParameters(
     query = req.queryParam("query").get(),
     operationName = req.queryParam("operationName").orElseGet { null },
-    variables = getJsonAsMap(req.queryParam("variables").orElseGet { null })
+    variables = getVariables(req)
   )
+}
+
+fun getVariables(req: ServerRequest): Map<String, Any>? {
+  return req.queryParam("variables")
+    .map { URLDecoder.decode(it, "UTF-8") }
+    .map { getJsonAsMap(it) }
+    .orElseGet { null }
 }
 
 val schema = buildSchema()
@@ -68,10 +76,6 @@ data class QueryParameters(
 )
 
 fun getJsonAsMap(variables: String?): Map<String, Any>? {
-  if (variables == null) {
-    return null
-  }
-
   val typeRef =
     TypeFactory.defaultInstance().constructMapType(HashMap::class.java, String::class.java, Any::class.java)
   return ObjectMapper().readValue(variables, typeRef)
