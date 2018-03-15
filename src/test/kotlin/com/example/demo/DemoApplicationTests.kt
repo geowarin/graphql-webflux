@@ -92,9 +92,21 @@ class DemoApplicationTests(@LocalServerPort port: Int) {
   }
 
   @Test
+  fun `POST should handle query parameter`() {
+    val query = """{persons{name}}"""
+
+    client.post().uri("/graphql?query={query}", query)
+      .retrieve().bodyToMono<GraphqlResponse<Persons>>()
+      .test().consumeNextWith {
+        assertThat(it.data.persons.map { it.name }).containsExactly("Ada", "Haskell")
+      }
+      .verifyComplete()
+  }
+
+  @Test
   fun `POST should give priority to query parameter`() {
-    val unusedQuery = """persons {age}"""
-    val realQuery = """persons {name}"""
+    val unusedQuery = """{persons {age}}"""
+    val realQuery = """{persons {name}}"""
 
     client.post().uri("/graphql?query={query}", realQuery)
       .syncBody(QueryParameters(query = unusedQuery))
@@ -107,9 +119,9 @@ class DemoApplicationTests(@LocalServerPort port: Int) {
 
   @Test
   fun `POST should handle application-GraphQL header`() {
-    val query = """persons {name}"""
+    val query = """{persons {name}}"""
 
-    client.post().uri("/graphql").accept(GraphQLMediaType)
+    client.post().uri("/graphql").contentType(GraphQLMediaType)
       .syncBody(query)
       .retrieve().bodyToMono<GraphqlResponse<Persons>>()
       .test().consumeNextWith {
@@ -123,7 +135,7 @@ data class Persons(
   val persons: List<Person>
 )
 
-data class GraphqlResponse<T>(
+data class GraphqlResponse<out T>(
   val data: T,
   val errors: List<Any>,
   val extensions: Any?

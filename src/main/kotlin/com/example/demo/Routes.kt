@@ -1,6 +1,6 @@
 package com.example.demo
 
-import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.databind.type.MapType
 import com.fasterxml.jackson.databind.type.TypeFactory
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import graphql.ExecutionInput.newExecutionInput
@@ -8,35 +8,54 @@ import graphql.GraphQL
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.core.io.ClassPathResource
+import org.springframework.http.HttpMethod
 import org.springframework.http.MediaType
 import org.springframework.web.reactive.function.BodyInserters.fromResource
 import org.springframework.web.reactive.function.server.*
 import org.springframework.web.reactive.function.server.ServerResponse.ok
 import reactor.core.publisher.Mono
+import reactor.core.publisher.Mono.*
 import java.net.URLDecoder
 import java.util.*
 
 val GraphQLMediaType = MediaType.parseMediaType("application/GraphQL")
+val MapTypeRef: MapType =
+  TypeFactory.defaultInstance().constructMapType(HashMap::class.java, String::class.java, Any::class.java)
 
 @Configuration
 class Routes {
 
   @Bean
-  fun routesFun(objectMapper: ObjectMapper) = router {
+  fun routesFun() = router {
     GET("/", { ok().body(fromResource(ClassPathResource("/graphiql.html"))) })
-    POST("/graphql", { req ->
-      req.bodyToMono<String>()
-        .flatMap { body ->
-          val queryParameters = objectMapper.readValue(body, QueryParameters::class.java)
-          serveGraphql(queryParameters)
-        }
-    })
-    GET("/graphql", { req ->
-      val queryParameters = queryParametersFromRequest(req)
-      serveGraphql(queryParameters)
-    })
+    (POST("/graphql") or GET("/graphql")).invoke { req: ServerRequest ->
+      getParams(req).flatMap { serveGraphql(it) }
+    }
   }
 }
+
+fun getParams(req: ServerRequest): Mono<QueryParameters> {
+  return when {
+    req.method() == HttpMethod.GET -> parseGetRequest(req)
+    else -> parsePostRequest(req)
+  }
+}
+
+fun parseGetRequest(req: ServerRequest) = just(queryParametersFromRequest(req))
+
+fun parsePostRequest(req: ServerRequest) = when {
+  req.queryParam("query").isPresent -> just(queryParametersFromRequest(req))
+  req.contentTypeIs(GraphQLMediaType) -> req.bodyToMono<String>().flatMap { body ->
+    just(QueryParameters(query = body))
+  }
+  else -> req.bodyToMono<String>().flatMap { body ->
+    val postParams = jacksonObjectMapper().readValue(body, QueryParameters::class.java)
+    just(postParams)
+  }
+}
+
+fun ServerRequest.contentTypeIs(mediaType: MediaType)
+  = this.headers().contentType().filter { it.isCompatibleWith(mediaType) }.isPresent
 
 fun queryParametersFromRequest(req: ServerRequest): QueryParameters {
   return QueryParameters(
@@ -66,7 +85,7 @@ fun serveGraphql(queryParameters: QueryParameters): Mono<ServerResponse> {
     .build()
 
   val executionResult = graphQL.executeAsync(executionInput)
-  return ok().body(Mono.fromFuture(executionResult))
+  return ok().body(fromFuture(executionResult))
 }
 
 data class QueryParameters(
@@ -76,7 +95,5 @@ data class QueryParameters(
 )
 
 fun getJsonAsMap(variables: String?): Map<String, Any>? {
-  val typeRef =
-    TypeFactory.defaultInstance().constructMapType(HashMap::class.java, String::class.java, Any::class.java)
-  return jacksonObjectMapper().readValue(variables, typeRef)
+  return jacksonObjectMapper().readValue(variables, MapTypeRef)
 }
