@@ -1,16 +1,14 @@
 package com.example.demo
 
-import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.Test
+import org.assertj.core.api.Assertions.*
+import org.junit.jupiter.api.*
 import org.junit.jupiter.api.extension.ExtendWith
-import org.junit.jupiter.api.fail
 import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.boot.test.context.SpringBootTest.WebEnvironment.RANDOM_PORT
+import org.springframework.boot.test.context.SpringBootTest.WebEnvironment.*
 import org.springframework.boot.web.server.LocalServerPort
 import org.springframework.http.HttpStatus.*
 import org.springframework.test.context.junit.jupiter.SpringExtension
-import org.springframework.web.reactive.function.client.WebClient
-import org.springframework.web.reactive.function.client.bodyToMono
+import org.springframework.web.reactive.function.client.*
 import reactor.test.test
 import java.net.URLEncoder
 
@@ -47,14 +45,14 @@ class DemoApplicationTests(@LocalServerPort port: Int) {
   fun `GET should error 400 when no query is present`() {
     client.get().uri("/graphql")
       .retrieve()
-      .onStatus({it != BAD_REQUEST }) { fail { "Should return 400 error" } }
+      .onStatus({ it != BAD_REQUEST }) { fail { "Should return 400 error" } }
       .bodyToMono<Any>().test().verifyComplete()
   }
 
   @Test
   fun `POST should error 400 when no query is present`() {
     client.post().uri("/graphql")
-      .retrieve().onStatus({it != BAD_REQUEST }) { fail { "Should return 400 error" } }
+      .retrieve().onStatus({ it != BAD_REQUEST }) { fail { "Should return 400 error" } }
       .bodyToMono<Any>().test().verifyComplete()
   }
 

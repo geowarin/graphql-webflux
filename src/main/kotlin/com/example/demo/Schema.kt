@@ -1,11 +1,7 @@
 package com.example.demo
 
-import graphql.Scalars.GraphQLInt
-import graphql.Scalars.GraphQLString
-import graphql.schema.GraphQLFieldDefinition
-import graphql.schema.GraphQLList
-import graphql.schema.GraphQLObjectType
-import graphql.schema.GraphQLSchema
+import graphql.Scalars.*
+import graphql.schema.*
 
 data class Person(
   val name: String,

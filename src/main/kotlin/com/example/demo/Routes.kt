@@ -1,17 +1,12 @@
 package com.example.demo
 
-import graphql.ExecutionInput.newExecutionInput
-import graphql.ExecutionResult
-import graphql.GraphQL
-import org.springframework.context.annotation.Bean
-import org.springframework.context.annotation.Configuration
+import graphql.*
+import graphql.ExecutionInput.*
+import org.springframework.context.annotation.*
 import org.springframework.core.io.ClassPathResource
-import org.springframework.http.HttpMethod
-import org.springframework.http.MediaType
-import org.springframework.web.reactive.function.server.ServerRequest
-import org.springframework.web.reactive.function.server.ServerResponse.badRequest
-import org.springframework.web.reactive.function.server.ServerResponse.ok
-import org.springframework.web.reactive.function.server.router
+import org.springframework.http.*
+import org.springframework.web.reactive.function.server.*
+import org.springframework.web.reactive.function.server.ServerResponse.*
 import reactor.core.publisher.Mono
 import reactor.core.publisher.Mono.*
 import java.net.URLDecoder
