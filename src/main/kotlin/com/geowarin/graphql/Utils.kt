@@ -20,9 +20,7 @@ fun <T> ServerRequest.withBody(mapFun: (String) -> T): Mono<T> =
 
 inline fun <reified T> readJson(value: String): T = jacksonObjectMapper().readValue(value, T::class.java)
 
-fun readJsonMap(variables: String?): Map<String, Any>? {
-  return jacksonObjectMapper().readValue(variables, MapTypeRef)
-}
+fun readJsonMap(variables: String?): Map<String, Any>? = jacksonObjectMapper().readValue(variables, MapTypeRef)
 
 fun serveStatic(resource: Resource): (ServerRequest) -> Mono<ServerResponse> =
   { ServerResponse.ok().body(BodyInserters.fromResource(resource)) }
