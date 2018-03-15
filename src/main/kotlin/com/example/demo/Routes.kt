@@ -2,21 +2,21 @@ package com.example.demo
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.type.TypeFactory
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import graphql.ExecutionInput.newExecutionInput
 import graphql.GraphQL
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.core.io.ClassPathResource
+import org.springframework.http.MediaType
 import org.springframework.web.reactive.function.BodyInserters.fromResource
-import org.springframework.web.reactive.function.server.ServerRequest
-import org.springframework.web.reactive.function.server.ServerResponse
+import org.springframework.web.reactive.function.server.*
 import org.springframework.web.reactive.function.server.ServerResponse.ok
-import org.springframework.web.reactive.function.server.body
-import org.springframework.web.reactive.function.server.router
 import reactor.core.publisher.Mono
 import java.net.URLDecoder
 import java.util.*
 
+val GraphQLMediaType = MediaType.parseMediaType("application/GraphQL")
 
 @Configuration
 class Routes {
@@ -25,7 +25,7 @@ class Routes {
   fun routesFun(objectMapper: ObjectMapper) = router {
     GET("/", { ok().body(fromResource(ClassPathResource("/graphiql.html"))) })
     POST("/graphql", { req ->
-      req.bodyToMono(String::class.java)
+      req.bodyToMono<String>()
         .flatMap { body ->
           val queryParameters = objectMapper.readValue(body, QueryParameters::class.java)
           serveGraphql(queryParameters)
@@ -78,5 +78,5 @@ data class QueryParameters(
 fun getJsonAsMap(variables: String?): Map<String, Any>? {
   val typeRef =
     TypeFactory.defaultInstance().constructMapType(HashMap::class.java, String::class.java, Any::class.java)
-  return ObjectMapper().readValue(variables, typeRef)
+  return jacksonObjectMapper().readValue(variables, typeRef)
 }

@@ -6,6 +6,7 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment.RANDOM_PORT
 import org.springframework.boot.web.server.LocalServerPort
+import org.springframework.http.MediaType
 import org.springframework.test.context.junit.jupiter.SpringExtension
 import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.bodyToMono
@@ -13,7 +14,7 @@ import reactor.test.test
 import java.net.URLEncoder
 
 /**
- * @see http://graphql.org/learn/serving-over-http/
+ * @see https://graphql.org/learn/serving-over-http/
  */
 @ExtendWith(SpringExtension::class)
 @SpringBootTest(webEnvironment = RANDOM_PORT)
@@ -86,6 +87,33 @@ class DemoApplicationTests(@LocalServerPort port: Int) {
       .retrieve().bodyToMono<GraphqlResponse<Persons>>()
       .test().consumeNextWith {
         assertThat(it.data.persons.map { it.name }).containsExactly("Ada")
+      }
+      .verifyComplete()
+  }
+
+  @Test
+  fun `POST should give priority to query parameter`() {
+    val unusedQuery = """persons {age}"""
+    val realQuery = """persons {name}"""
+
+    client.post().uri("/graphql?query={query}", realQuery)
+      .syncBody(QueryParameters(query = unusedQuery))
+      .retrieve().bodyToMono<GraphqlResponse<Persons>>()
+      .test().consumeNextWith {
+        assertThat(it.data.persons.map { it.name }).containsExactly("Ada", "Haskell")
+      }
+      .verifyComplete()
+  }
+
+  @Test
+  fun `POST should handle application-GraphQL header`() {
+    val query = """persons {name}"""
+
+    client.post().uri("/graphql").accept(GraphQLMediaType)
+      .syncBody(query)
+      .retrieve().bodyToMono<GraphqlResponse<Persons>>()
+      .test().consumeNextWith {
+        assertThat(it.data.persons.map { it.name }).containsExactly("Ada", "Haskell")
       }
       .verifyComplete()
   }
