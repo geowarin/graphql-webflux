@@ -11,7 +11,6 @@ import org.springframework.http.MediaType
 import org.springframework.web.reactive.function.server.ServerRequest
 import org.springframework.web.reactive.function.server.ServerResponse.badRequest
 import org.springframework.web.reactive.function.server.ServerResponse.ok
-import org.springframework.web.reactive.function.server.body
 import org.springframework.web.reactive.function.server.router
 import reactor.core.publisher.Mono
 import reactor.core.publisher.Mono.*
@@ -27,19 +26,19 @@ class Routes {
   fun routesFun() = router {
     GET("/", serveStatic(ClassPathResource("/graphiql.html")))
     (POST("/graphql") or GET("/graphql")).invoke { req: ServerRequest ->
-      getParams(req)
-        .flatMap { serveGraphql(it) }
-        .flatMap { ok().body(just(it)) }
+      getGraphQLParameters(req)
+        .flatMap { executeGraphQLQuery(it) }
+        .flatMap { ok().syncBody(it) }
         .switchIfEmpty(badRequest().build())
     }
   }
 }
 
-fun serveGraphql(queryParameters: QueryParameters): Mono<ExecutionResult> {
+fun executeGraphQLQuery(graphQLParameters: GraphQLParameters): Mono<ExecutionResult> {
   val executionInput = newExecutionInput()
-    .query(queryParameters.query)
-    .operationName(queryParameters.operationName)
-    .variables(queryParameters.variables)
+    .query(graphQLParameters.query)
+    .operationName(graphQLParameters.operationName)
+    .variables(graphQLParameters.variables)
 
   val graphQL = GraphQL
     .newGraphQL(schema)
@@ -48,31 +47,27 @@ fun serveGraphql(queryParameters: QueryParameters): Mono<ExecutionResult> {
   return fromFuture(graphQL.executeAsync(executionInput))
 }
 
-fun getParams(req: ServerRequest): Mono<QueryParameters> {
+fun getGraphQLParameters(req: ServerRequest): Mono<GraphQLParameters> {
   return when {
-    req.method() == HttpMethod.GET -> parseGetRequest(req)
-    else -> parsePostRequest(req)
+    req.queryParam("query").isPresent -> graphQLParametersFromRequestParameters(req)
+    req.method() == HttpMethod.POST -> parsePostRequest(req)
+    else -> empty()
   }
 }
 
-fun parseGetRequest(req: ServerRequest) = queryParametersFromRequest(req)
-
 fun parsePostRequest(req: ServerRequest) = when {
-  req.queryParam("query").isPresent -> queryParametersFromRequest(req)
-  req.contentTypeIs(GraphQLMediaType) -> req.withBody { QueryParameters(query = it) }
-  else -> req.withBody { toJson<QueryParameters>(it) }
+  req.contentTypeIs(GraphQLMediaType) -> req.withBody { GraphQLParameters(query = it) }
+  else -> req.withBody { toJson<GraphQLParameters>(it) }
 }
 
-fun queryParametersFromRequest(req: ServerRequest): Mono<QueryParameters> = when {
-  req.queryParam("query").isPresent -> just(
-    QueryParameters(
+fun graphQLParametersFromRequestParameters(req: ServerRequest) =
+  just(
+    GraphQLParameters(
       query = req.queryParam("query").get(),
       operationName = req.queryParam("operationName").orElseGet { null },
       variables = getVariables(req)
     )
   )
-  else -> empty()
-}
 
 fun getVariables(req: ServerRequest): Map<String, Any>? {
   return req.queryParam("variables")
@@ -81,7 +76,7 @@ fun getVariables(req: ServerRequest): Map<String, Any>? {
     .orElseGet { null }
 }
 
-data class QueryParameters(
+data class GraphQLParameters(
   val query: String,
   val operationName: String? = null,
   val variables: Map<String, Any>? = null

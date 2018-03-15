@@ -7,9 +7,7 @@ import org.junit.jupiter.api.fail
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment.RANDOM_PORT
 import org.springframework.boot.web.server.LocalServerPort
-import org.springframework.http.HttpStatus
 import org.springframework.http.HttpStatus.*
-import org.springframework.http.MediaType
 import org.springframework.test.context.junit.jupiter.SpringExtension
 import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.bodyToMono
@@ -17,7 +15,7 @@ import reactor.test.test
 import java.net.URLEncoder
 
 /**
- * @see https://graphql.org/learn/serving-over-http/
+ * Implements the spec at https://graphql.org/learn/serving-over-http/
  */
 @ExtendWith(SpringExtension::class)
 @SpringBootTest(webEnvironment = RANDOM_PORT)
@@ -27,11 +25,7 @@ class DemoApplicationTests(@LocalServerPort port: Int) {
   @Test
   fun `should handle post`() {
     client.post().uri("/graphql")
-      .syncBody(
-        QueryParameters(
-          query = "{persons{name}}"
-        )
-      )
+      .syncBody(GraphQLParameters(query = "{persons{name}}"))
       .retrieve().bodyToMono<GraphqlResponse<Persons>>()
       .test().consumeNextWith {
         assertThat(it.data.persons.map { it.name }).containsExactly("Ada", "Haskell")
@@ -53,7 +47,14 @@ class DemoApplicationTests(@LocalServerPort port: Int) {
   fun `GET should error 400 when no query is present`() {
     client.get().uri("/graphql")
       .retrieve()
-      .onStatus({it != BAD_REQUEST }) { fail { "Should error" } }
+      .onStatus({it != BAD_REQUEST }) { fail { "Should return 400 error" } }
+      .bodyToMono<Any>().test().verifyComplete()
+  }
+
+  @Test
+  fun `POST should error 400 when no query is present`() {
+    client.post().uri("/graphql")
+      .retrieve().onStatus({it != BAD_REQUEST }) { fail { "Should return 400 error" } }
       .bodyToMono<Any>().test().verifyComplete()
   }
 
@@ -68,7 +69,7 @@ class DemoApplicationTests(@LocalServerPort port: Int) {
     """
 
     client.post().uri("/graphql")
-      .syncBody(QueryParameters(query = query, variables = mapOf("name" to "ada")))
+      .syncBody(GraphQLParameters(query = query, variables = mapOf("name" to "ada")))
       .retrieve().bodyToMono<GraphqlResponse<Persons>>()
       .test().consumeNextWith {
         assertThat(it.data.persons.map { it.name }).containsExactly("Ada")
@@ -120,7 +121,7 @@ class DemoApplicationTests(@LocalServerPort port: Int) {
     val realQuery = """{persons {name}}"""
 
     client.post().uri("/graphql?query={query}", realQuery)
-      .syncBody(QueryParameters(query = unusedQuery))
+      .syncBody(GraphQLParameters(query = unusedQuery))
       .retrieve().bodyToMono<GraphqlResponse<Persons>>()
       .test().consumeNextWith {
         assertThat(it.data.persons.map { it.name }).containsExactly("Ada", "Haskell")
