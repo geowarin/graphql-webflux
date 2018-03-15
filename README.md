@@ -7,7 +7,7 @@ When browsing the application on `localhost:8080`, you will see the [graphiQL](h
 
 ## Why
 
-There is a [graphql-spring-boot-starter](https://github.com/merapar/graphql-spring-boot-starter)
+There is a [graphql-spring-boot-starter](https://github.com/graphql-java/graphql-spring-boot)
 already available but it uses a Servlet which forces us to use spring MVC.
 
 Creating a handler for webflux using graphql-java is fairly trivial but there is actually
