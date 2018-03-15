@@ -18,9 +18,9 @@ fun ServerRequest.contentTypeIs(mediaType: MediaType) =
 fun <T> ServerRequest.withBody(mapFun: (String) -> T): Mono<T> =
   this.bodyToMono<String>().flatMap { Mono.just(mapFun(it)) }
 
-inline fun <reified T> toJson(value: String): T = jacksonObjectMapper().readValue(value, T::class.java)
+inline fun <reified T> readJson(value: String): T = jacksonObjectMapper().readValue(value, T::class.java)
 
-fun toJsonMap(variables: String?): Map<String, Any>? {
+fun readJsonMap(variables: String?): Map<String, Any>? {
   return jacksonObjectMapper().readValue(variables, MapTypeRef)
 }
 

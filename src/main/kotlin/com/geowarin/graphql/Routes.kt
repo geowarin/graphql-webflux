@@ -50,7 +50,7 @@ fun getGraphQLParameters(req: ServerRequest): Mono<GraphQLParameters> = when {
 
 fun parsePostRequest(req: ServerRequest) = when {
   req.contentTypeIs(GraphQLMediaType) -> req.withBody { GraphQLParameters(query = it) }
-  else -> req.withBody { toJson<GraphQLParameters>(it) }
+  else -> req.withBody { readJson<GraphQLParameters>(it) }
 }
 
 fun graphQLParametersFromRequestParameters(req: ServerRequest) =
@@ -65,7 +65,7 @@ fun graphQLParametersFromRequestParameters(req: ServerRequest) =
 fun getVariables(req: ServerRequest): Map<String, Any>? {
   return req.queryParam("variables")
     .map { URLDecoder.decode(it, "UTF-8") }
-    .map { toJsonMap(it) }
+    .map { readJsonMap(it) }
     .orElseGet { null }
 }
 
