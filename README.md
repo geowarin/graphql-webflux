@@ -19,3 +19,9 @@ application.
 
 I hope it can serve as a base implementation if graphql-java's authors wish to support
 Webflux in the future.   
+
+## Tests
+
+Tests are written using the reactive WebClient and junit 5.
+
+They require gradle 4.6 to work, so be sure to use the wrapper.
