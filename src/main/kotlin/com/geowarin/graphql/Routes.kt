@@ -42,12 +42,10 @@ fun executeGraphQLQuery(graphQLParameters: GraphQLParameters): Mono<ExecutionRes
   return fromFuture(graphQL.executeAsync(executionInput))
 }
 
-fun getGraphQLParameters(req: ServerRequest): Mono<GraphQLParameters> {
-  return when {
-    req.queryParam("query").isPresent -> graphQLParametersFromRequestParameters(req)
-    req.method() == HttpMethod.POST -> parsePostRequest(req)
-    else -> empty()
-  }
+fun getGraphQLParameters(req: ServerRequest): Mono<GraphQLParameters> = when {
+  req.queryParam("query").isPresent -> graphQLParametersFromRequestParameters(req)
+  req.method() == HttpMethod.POST -> parsePostRequest(req)
+  else -> empty()
 }
 
 fun parsePostRequest(req: ServerRequest) = when {
