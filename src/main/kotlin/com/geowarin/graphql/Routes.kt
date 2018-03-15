@@ -1,4 +1,4 @@
-package com.example.demo
+package com.geowarin.graphql
 
 import graphql.*
 import graphql.ExecutionInput.*

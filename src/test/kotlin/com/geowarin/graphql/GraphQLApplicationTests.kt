@@ -1,4 +1,4 @@
-package com.example.demo
+package com.geowarin.graphql
 
 import org.assertj.core.api.Assertions.*
 import org.junit.jupiter.api.*
@@ -17,7 +17,7 @@ import java.net.URLEncoder
  */
 @ExtendWith(SpringExtension::class)
 @SpringBootTest(webEnvironment = RANDOM_PORT)
-class DemoApplicationTests(@LocalServerPort port: Int) {
+class GraphQLApplicationTests(@LocalServerPort port: Int) {
   private val client = WebClient.create("http://localhost:$port")
 
   @Test

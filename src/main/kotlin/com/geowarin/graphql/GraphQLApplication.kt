@@ -1,11 +1,11 @@
-package com.example.demo
+package com.geowarin.graphql
 
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.runApplication
 
 @SpringBootApplication
-class DemoApplication
+class GraphQLApplication
 
 fun main(args: Array<String>) {
-  runApplication<DemoApplication>(*args)
+  runApplication<GraphQLApplication>(*args)
 }

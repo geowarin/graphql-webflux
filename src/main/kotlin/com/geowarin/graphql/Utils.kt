@@ -1,4 +1,4 @@
-package com.example.demo
+package com.geowarin.graphql
 
 import com.fasterxml.jackson.databind.type.*
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
