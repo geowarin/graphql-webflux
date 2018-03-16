@@ -14,7 +14,7 @@ Creating a handler for webflux using graphql-java is fairly trivial but there is
 a [spec to follow](https://graphql.org/learn/serving-over-http/) when serving graphql
 over HTTP.
 
-This is my implementation of this spec, it is fully tested and ready to be used in your
+This is my implementation of the spec, it is fully tested and ready to be used in your
 application.
 
 I hope it can serve as a base implementation if graphql-java's authors wish to support
@@ -25,3 +25,16 @@ Webflux in the future.
 Tests are written using the reactive WebClient and junit 5.
 
 They require gradle 4.6 to work, so be sure to use the wrapper.
+
+## Your feedback is welcome
+
+I'm not a reactor specialist and I don't have a clear understanding of graphql-java async's internals yet.
+In particular, I'm curious about [this issue](https://github.com/geowarin/graphql-webflux/issues/2).
+
+If you have more insights, please give your opinion.
+
+I did my best to implement the graphql spec but there might be bugs or things I overlooked.
+
+If you find anything odd, contributing with an issue or a failing test would be wonderful. ❤️
+
+Thanks! 
